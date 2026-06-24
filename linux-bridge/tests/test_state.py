@@ -15,7 +15,14 @@ def test_idle_when_empty():
     assert snap["total"] == 0
     assert snap["running"] == 0
     assert snap["waiting"] == 0
+    assert snap["msg"] == "idle"
     assert snap["completed"] is False
+
+
+def test_msg_working_fallback_when_running_no_activity():
+    s = SessionStore(clock=FakeClock())
+    s.prompt_submit("a")
+    assert s.snapshot()["msg"] == "working"
 
 
 def test_running_after_prompt():
