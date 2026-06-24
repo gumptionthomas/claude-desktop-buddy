@@ -39,6 +39,35 @@ depends on the M5StickCPlus library for its display, IMU, and button
 drivers—so you'll need that board, or a fork that swaps those drivers for
 your own pin layout.
 
+## Desk setup (mounting & charging)
+
+The buddy is happiest plugged in (it doesn't deep-sleep, and the ~120mAh cell
+only lasts an hour or two on battery), so it's meant to live on your desk on
+power. Because the bridge talks over **BLE, the dock only needs to deliver
+power — not data** — which means cheap magnetic charge connectors are fair game.
+
+The setup in use here — a true magnetic snap-on mount ("Combo 2"):
+
+| Item | Purpose |
+|------|---------|
+| Magnetic USB-C cable kit (cable + tips) | Snap-on charging. A tip lives in the stick's bottom port permanently; the cable snaps to it. Charge-only is fine. |
+| Adhesive metal plate (e.g. Volport) | One rectangle stuck on the M5 case back, making the stick magnet-mountable. |
+| Magnetic desk mount (e.g. WixGear) | Weighted desk stand the stick snaps onto; built-in cable holder routes the charge cable. |
+| Any 5V USB charger | Power source. The stick sips power, so anything works. |
+
+Assembly: tip into the bottom port → metal plate centered on the case back
+(positioned so the bottom port stays clear when mounted) → snap the stick to
+the desk mount → snap the magnetic cable to the tip → tuck the cable through
+the mount's cord holder.
+
+Two magnetic connections (one holds, one charges), so it's two little clicks,
+not one. For true one-click mount-and-charge you'd need a magnetic charging
+*post* (a printed/DIY weighted base with the connector pointing up) — at ~50g
+the stick is light enough to stand on the connector alone.
+
+**Match the cable's power end to your charger** (a USB-C-to-C kit needs a USB-C
+port; otherwise use a USB-A-to-C magnetic kit).
+
 ## Flashing
 
 Install
