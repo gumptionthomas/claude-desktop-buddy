@@ -7,6 +7,7 @@ class _Session:
     running: bool = False
     waiting: bool = False
     last_seen: float = 0.0
+    project: str = ""
 
 
 def _line(tool: str, detail: str, project: str = "") -> str:
@@ -45,12 +46,16 @@ class SessionStore:
         s = self._touch(sid)
         s.running = True
         s.waiting = False
+        if project:
+            s.project = project
         self._recent.insert(0, _line(tool, detail, project))
         del self._recent[self._max_entries:]
 
-    def notification(self, sid: str) -> None:
+    def notification(self, sid: str, project: str = "") -> None:
         s = self._touch(sid)
         s.waiting = True
+        if project:
+            s.project = project
 
     def stop(self, sid: str) -> None:
         s = self._touch(sid)
@@ -70,10 +75,23 @@ class SessionStore:
 
     def snapshot(self) -> dict:
         running = sum(1 for s in self._sessions.values() if s.running)
-        waiting = sum(1 for s in self._sessions.values() if s.waiting)
         completed = self._completed
         self._completed = False
-        msg = self._recent[0] if self._recent else ("working" if running else "idle")
+        waiters = [s for s in self._sessions.values() if s.waiting]
+        waiting = len(waiters)
+        if waiters:
+            # Name the most-recently-waiting session's project so you know
+            # where to go; count when more than one needs you.
+            recent = max(waiters, key=lambda s: s.last_seen)
+            proj = recent.project
+            if waiting == 1:
+                msg = f"{proj}: needs you" if proj else "needs you"
+            else:
+                msg = f"{waiting} waiting: {proj}" if proj else f"{waiting} waiting"
+        elif self._recent:
+            msg = self._recent[0]
+        else:
+            msg = "working" if running else "idle"
         return {
             "total": len(self._sessions),
             "running": running,

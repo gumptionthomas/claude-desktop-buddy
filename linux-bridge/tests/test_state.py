@@ -67,6 +67,43 @@ def test_notification_sets_waiting_cleared_by_activity():
     assert s.snapshot()["waiting"] == 0
 
 
+def test_waiting_msg_names_project():
+    s = SessionStore(clock=FakeClock())
+    s.notification("a", project="webapp")
+    assert s.snapshot()["msg"] == "webapp: needs you"
+
+
+def test_waiting_msg_without_project():
+    s = SessionStore(clock=FakeClock())
+    s.notification("a")
+    assert s.snapshot()["msg"] == "needs you"
+
+
+def test_waiting_msg_multiple_sessions_counts_and_names_recent():
+    clock = FakeClock()
+    s = SessionStore(clock=clock)
+    s.notification("a", project="webapp")
+    clock.t += 1
+    s.notification("b", project="docs")   # most recently waiting
+    snap = s.snapshot()
+    assert snap["waiting"] == 2
+    assert snap["msg"] == "2 waiting: docs"
+
+
+def test_waiting_msg_takes_priority_over_activity():
+    s = SessionStore(clock=FakeClock())
+    s.post_tool("a", "Bash", "ls", project="webapp")
+    s.notification("a", project="webapp")
+    assert s.snapshot()["msg"] == "webapp: needs you"
+
+
+def test_post_tool_project_remembered_for_later_waiting():
+    s = SessionStore(clock=FakeClock())
+    s.post_tool("a", "Bash", "ls", project="webapp")
+    s.notification("a")   # no project on this event
+    assert s.snapshot()["msg"] == "webapp: needs you"
+
+
 def test_stop_clears_running_and_pulses_completed_once():
     s = SessionStore(clock=FakeClock())
     s.prompt_submit("a")
