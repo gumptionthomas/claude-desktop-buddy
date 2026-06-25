@@ -894,8 +894,8 @@ void drawPet() {
 void drawHUD() {
   if (tama.promptId[0]) { drawApproval(); return; }
   const Palette& p = characterPalette();
-  const int SHOW = 3, LH = 8, WIDTH = 21;
-  const int AREA = SHOW * LH + 4;
+  const int SHOW = 5, LH = 8, WIDTH = 21;   // 5 rows; HUD ~44px, starts y=196
+  const int AREA = SHOW * LH + 4;           // pet clears y<=164, so no overlap
   spr.fillRect(0, H - AREA, W, AREA, p.bg);
   spr.setTextSize(1);
 
