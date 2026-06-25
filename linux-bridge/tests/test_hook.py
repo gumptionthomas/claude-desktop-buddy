@@ -26,6 +26,20 @@ def test_map_post_tool_bare_cd_kept():
     assert out["detail"] == "cd /home/me/webapp"
 
 
+def test_map_post_tool_strips_cd_newline():
+    data = {"session_id": "a", "tool_name": "Bash",
+            "tool_input": {"command": "cd /home/me/webapp\ngit status"}}
+    out = hook.map_event("post-tool", data)
+    assert out["detail"] == "git status"
+
+
+def test_map_post_tool_collapses_multiline():
+    data = {"session_id": "a", "tool_name": "Bash",
+            "tool_input": {"command": "cd /x\ngit add .\ngit commit"}}
+    out = hook.map_event("post-tool", data)
+    assert out["detail"] == "git add . git commit"
+
+
 def test_map_post_tool_file_path_detail():
     data = {"session_id": "a", "tool_name": "Read",
             "tool_input": {"file_path": "/x/main.cpp"}}
