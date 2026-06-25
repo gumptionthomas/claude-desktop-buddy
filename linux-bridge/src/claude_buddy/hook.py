@@ -6,9 +6,12 @@ import sys
 
 from .config import load
 
-# Strip a leading "cd <path> && " (or ";") so Bash detail shows the real
-# command, not the directory change most compound commands start with.
-_CD_PREFIX = re.compile(r"^\s*cd\s+(?:\"[^\"]*\"|'[^']*'|\S+)\s*(?:&&|;)\s*")
+# Strip a leading "cd <path>" statement so Bash detail shows the real command,
+# not the directory change most commands start with. The separator may be
+# &&, ;, or a newline (multi-line commands) — [ \t]* before it so a trailing
+# newline isn't pre-consumed.
+_CD_PREFIX = re.compile(
+    r"^cd\s+(?:\"[^\"]*\"|'[^']*'|\S+)[ \t]*(?:&&|;|\n)[ \t\n]*")
 
 _SIMPLE = {
     "session-start": "session_start",
@@ -22,7 +25,10 @@ def _detail(tool_input: dict) -> str:
     if not isinstance(tool_input, dict):
         return ""
     if "command" in tool_input:
-        return _CD_PREFIX.sub("", str(tool_input["command"]))[:40]
+        cmd = _CD_PREFIX.sub("", str(tool_input["command"]).lstrip())
+        # Collapse remaining whitespace/newlines so a multi-line command shows
+        # as one readable line.
+        return " ".join(cmd.split())[:40]
     if "file_path" in tool_input:
         return os.path.basename(str(tool_input["file_path"]))
     return ""
