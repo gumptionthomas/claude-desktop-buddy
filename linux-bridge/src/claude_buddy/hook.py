@@ -50,6 +50,11 @@ def map_event(event: str, data: dict) -> dict | None:
                 "detail": _detail(data.get("tool_input", {})),
                 "project": _project(data.get("cwd"))}
     if event == "notification":
+        # Claude Code fires Notification both for permission prompts and for the
+        # ~60s "waiting for your input" idle nudge. Only the former is an alert;
+        # ignore the idle one so the buddy doesn't false-trigger attention.
+        if "waiting for your input" in str(data.get("message", "")).lower():
+            return None
         return {"event": "notification", "session_id": sid,
                 "project": _project(data.get("cwd"))}
     if event == "prompt-submit":

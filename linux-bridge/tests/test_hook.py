@@ -89,6 +89,19 @@ def test_map_stop_passes_transcript_path(tmp_path):
                    "project": "webapp", "transcript_path": "/x/t.jsonl"}
 
 
+def test_map_notification_permission_alerts():
+    out = hook.map_event("notification", {
+        "session_id": "a", "cwd": "/x/webapp",
+        "message": "Claude needs your permission to use Bash"})
+    assert out == {"event": "notification", "session_id": "a", "project": "webapp"}
+
+
+def test_map_notification_idle_ignored():
+    out = hook.map_event("notification", {
+        "session_id": "a", "message": "Claude is waiting for your input"})
+    assert out is None
+
+
 def test_map_notification_includes_project():
     out = hook.map_event("notification", {"session_id": "a", "cwd": "/x/webapp"})
     assert out == {"event": "notification", "session_id": "a", "project": "webapp"}
