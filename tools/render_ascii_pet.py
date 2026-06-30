@@ -24,8 +24,8 @@ OUT_ROOT = os.path.join(os.path.dirname(__file__), os.pardir,
                         "linux-bridge", "src", "claude_buddy", "tidbyt_buddy")
 
 POSE_X, POSE_Y = 8, 1          # center ~48x30 art on the 64x32 panel
-DELAY = {"celebrate": 110}     # ms per frame; default below
-DEFAULT_DELAY = 150
+FIRMWARE_TICK_MS = 200         # the M5 ticks the pet every 200ms (main.cpp)
+MAX_ANIM_MS = 14500            # pixlet/Tidbyt hard-cap animations at 15s
 
 
 def _particle(state, i, n):
@@ -65,7 +65,10 @@ def _star(state, data):
     body = ",\n        ".join(
         _frame_star(frames[i], _particle(state, i, len(frames)), color)
         for i in range(len(frames)))
-    delay = DELAY.get(state, DEFAULT_DELAY)
+    # Match the M5 (each pose holds `divisor` ticks of 200ms), but speed up just
+    # enough to keep every pose under the 15s animation cap.
+    n = len(frames)
+    delay = min(data.get("divisor", 5) * FIRMWARE_TICK_MS, MAX_ANIM_MS // max(n, 1))
     return (
         'load("render.star", "render")\n'
         "def main(config):\n"

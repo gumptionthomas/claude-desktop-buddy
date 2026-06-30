@@ -53,7 +53,9 @@ class Bridge:
         self._tb_current = None        # asset/marker currently in the slot
         self._tb_idle_idx = None
         self._tb_idle_at = -1e9
-        self.tb_haiku_secs = 45.0
+        # A haiku scrolls once in ~8s, so ~18s ≈ two full scroll passes before
+        # reverting to the buddy.
+        self.tb_haiku_secs = 18.0
         self.tb_celebrate_secs = 5.0
         self.tb_idle_refresh = 180.0
         self._dirty = asyncio.Event()

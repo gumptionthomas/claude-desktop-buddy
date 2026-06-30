@@ -60,9 +60,13 @@ def extract(path):
         r = ((rgb565 >> 11) & 0x1F) << 3
         g = ((rgb565 >> 5) & 0x3F) << 2
         b = (rgb565 & 0x1F) << 3
+        # `beat = (t / N)` -> each pose holds N firmware ticks; the renderer
+        # turns this into the per-frame delay so the Tidbyt matches the M5.
+        dm = re.search(r"beat\s*=\s*\(t\s*/\s*(\d+)\)", body)
+        divisor = int(dm.group(1)) if dm else 5
         frames = [poses[order[i]] for i in seq if i < len(order) and order[i] in poses]
         result[st.lower()] = {"color": "#%02x%02x%02x" % (r, g, b),
-                              "frames": frames}
+                              "frames": frames, "divisor": divisor}
     return result
 
 
