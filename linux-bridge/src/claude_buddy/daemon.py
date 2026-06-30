@@ -24,9 +24,6 @@ _DISPATCH = {
 }
 
 
-_TB_IDLE_N = 9   # idle_0 .. idle_8 buddy variants
-
-
 def apply_event(store: SessionStore, payload: dict) -> None:
     fn = _DISPATCH.get(payload.get("event"))
     if fn and payload.get("session_id"):
@@ -56,7 +53,9 @@ class Bridge:
         self._tb_current = None        # asset/marker currently in the slot
         self._tb_idle_idx = None
         self._tb_idle_at = -1e9
-        self.tb_haiku_secs = 45.0
+        # A haiku scrolls once in ~8s, so ~18s ≈ two full scroll passes before
+        # reverting to the buddy.
+        self.tb_haiku_secs = 18.0
         self.tb_celebrate_secs = 5.0
         self.tb_idle_refresh = 180.0
         self._dirty = asyncio.Event()
@@ -113,6 +112,9 @@ class Bridge:
         return ""
 
     async def _on_stop(self, sid, project, path):
+        # A turn just ended -> open the celebration window now so the Tidbyt
+        # plays the confetti before a haiku takes the slot (see _tidbyt_haiku).
+        self._tb_celebrate_until = self._loop_time() + self.tb_celebrate_secs
         reply = await self._await_reply(path)
         # Credit this turn's output tokens (feeds the pet's level).
         loop = asyncio.get_event_loop()
@@ -160,6 +162,10 @@ class Bridge:
 
     # --- Tidbyt buddy/haiku orchestration --------------------------------
     async def _tidbyt_haiku(self, lines):
+        # Let an in-progress celebration finish before the haiku takes the slot.
+        wait = self._tb_celebrate_until - self._loop_time()
+        if wait > 0:
+            await asyncio.sleep(wait)
         tb = self._tidbyt
         ok = await tidbyt.push(lines, device_id=tb["device_id"],
                                api_token=tb["api_token"], app_path=tb["app_path"],
@@ -187,12 +193,15 @@ class Bridge:
         persona = self._persona(snap, now)
         if persona != "idle":
             return persona
-        # idle: rotate the variants sequentially, like the firmware.
+        # idle: ASCII pets ship a single animated idle; bufo rotates variants.
+        idle = (self._tidbyt or {}).get("idle_assets") or ["idle"]
+        if len(idle) <= 1:
+            return idle[0]
         if self._tb_idle_idx is None or now - self._tb_idle_at >= self.tb_idle_refresh:
             self._tb_idle_idx = 0 if self._tb_idle_idx is None \
-                else (self._tb_idle_idx + 1) % _TB_IDLE_N
+                else (self._tb_idle_idx + 1) % len(idle)
             self._tb_idle_at = now
-        return "idle_%d" % self._tb_idle_idx
+        return idle[self._tb_idle_idx]
 
     async def _tidbyt_sync(self, snap):
         if not self._tidbyt:
@@ -281,6 +290,30 @@ def _make_compose(cfg):
     return compose
 
 
+def _tidbyt_assets(here, pet):
+    """(asset_dir, idle_assets) for the configured pet, falling back to bufo.
+
+    bufo lives at tidbyt_buddy/ with idle_0..N variants; ASCII species live at
+    tidbyt_buddy/<pet>/ with a single idle.webp. An unknown/empty pet -> bufo.
+    """
+    root = os.path.join(here, "tidbyt_buddy")
+
+    def idles(d):
+        if not os.path.isdir(d):
+            return []
+        if os.path.exists(os.path.join(d, "idle.webp")):
+            return ["idle"]
+        return sorted((f[:-5] for f in os.listdir(d)
+                       if f.startswith("idle_") and f.endswith(".webp")),
+                      key=lambda s: int(s.rsplit("_", 1)[1]))
+
+    cand = root if (not pet or pet == "bufo") else os.path.join(root, pet)
+    idle = idles(cand)
+    if not idle:
+        cand, idle = root, idles(root)
+    return cand, idle
+
+
 def _make_tidbyt(cfg):
     if not (cfg.tidbyt_device_id and cfg.tidbyt_api_key):
         return None
@@ -288,10 +321,11 @@ def _make_tidbyt(cfg):
     # so resolve pixlet to an absolute path the subprocess can actually find.
     pixlet = shutil.which("pixlet") or os.path.expanduser("~/.local/bin/pixlet")
     here = os.path.dirname(__file__)
+    asset_dir, idle_assets = _tidbyt_assets(here, cfg.tidbyt_pet)
     return {"device_id": cfg.tidbyt_device_id, "api_token": cfg.tidbyt_api_key,
             "pixlet": pixlet,
             "app_path": os.path.join(here, "tidbyt_app.star"),
-            "asset_dir": os.path.join(here, "tidbyt_buddy")}
+            "asset_dir": asset_dir, "idle_assets": idle_assets}
 
 
 def main(argv=None) -> int:
