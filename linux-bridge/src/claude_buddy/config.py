@@ -18,6 +18,7 @@ class Config:
     model: str = "claude-haiku-4-5-20251001"
     tidbyt_device_id: str = ""
     tidbyt_api_key: str = ""
+    tidbyt_pet: str = "bufo"
 
 
 def _default_config_path() -> Path:
@@ -41,4 +42,7 @@ def load(path: Path | None = None) -> Config:
         # tidbyt_* (both required) mirror the haiku to a Tidbyt display.
         tidbyt_device_id=data.get("tidbyt_device_id", ""),
         tidbyt_api_key=data.get("tidbyt_api_key") or os.environ.get("TIDBYT_API_KEY", ""),
+        # tidbyt_pet selects which buddy the Tidbyt shows: "bufo" (the GIF) or
+        # an ASCII species name (e.g. "capybara"); unknown falls back to bufo.
+        tidbyt_pet=data.get("tidbyt_pet") or "bufo",
     )

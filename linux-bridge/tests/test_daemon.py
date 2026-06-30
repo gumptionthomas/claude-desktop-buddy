@@ -138,9 +138,11 @@ def test_maybe_roll_today_resets_on_date_change():
     assert snap["tokens"] == 100                # cumulative preserved
 
 
-def _bridge_tb():
+def _bridge_tb(idle_assets=None):
+    if idle_assets is None:
+        idle_assets = ["idle_%d" % i for i in range(9)]   # bufo default
     tb = {"device_id": "d", "api_token": "t", "pixlet": "pixlet",
-          "app_path": "/a.star", "asset_dir": "/assets"}
+          "app_path": "/a.star", "asset_dir": "/assets", "idle_assets": idle_assets}
     return daemon.Bridge(SessionStore(), FakeTransport(), "/tmp/x.sock", tidbyt=tb)
 
 
@@ -171,3 +173,29 @@ def test_tidbyt_decide_idle_rotates_sequentially():
     assert b._tidbyt_decide({}, 100.0) == "idle_0"
     assert b._tidbyt_decide({}, 105.0) == "idle_0"   # within window
     assert b._tidbyt_decide({}, 111.0) == "idle_1"   # advanced
+
+
+def test_tidbyt_decide_single_idle_no_rotation():
+    # ASCII pets ship one animated idle.webp -> always "idle", never rotate.
+    b = _bridge_tb(idle_assets=["idle"])
+    b.tb_idle_refresh = 10.0
+    assert b._tidbyt_decide({}, 100.0) == "idle"
+    assert b._tidbyt_decide({}, 130.0) == "idle"
+    assert b._tb_idle_idx is None       # rotation state untouched
+
+
+def test_tidbyt_assets_selects_pet_and_falls_back(tmp_path):
+    root = tmp_path / "tidbyt_buddy"
+    (root / "capybara").mkdir(parents=True)
+    for n in ("idle_0", "idle_1", "busy"):       # bufo at root
+        (root / (n + ".webp")).write_bytes(b"")
+    (root / "capybara" / "idle.webp").write_bytes(b"")
+
+    d, idle = daemon._tidbyt_assets(str(tmp_path), "capybara")
+    assert d.endswith("/capybara") and idle == ["idle"]
+
+    d, idle = daemon._tidbyt_assets(str(tmp_path), "bufo")
+    assert d == str(root) and idle == ["idle_0", "idle_1"]
+
+    d, idle = daemon._tidbyt_assets(str(tmp_path), "nonesuch")   # unknown -> bufo
+    assert d == str(root) and idle == ["idle_0", "idle_1"]
