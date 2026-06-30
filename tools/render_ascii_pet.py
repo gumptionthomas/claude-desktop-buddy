@@ -37,9 +37,9 @@ def _particle(state, i, n):
     Designed for the 64x32 panel rather than ported from the M5 firmware.
     """
     if state == "busy":
-        # A loading ellipsis building down the right edge (0->1->2->3, reset),
+        # A loading ellipsis breathing down the right edge (0->3 and back),
         # clear of the busy face animation in the center.
-        count = i % 4
+        count = [0, 1, 2, 3, 3, 2, 1][i % 7]
         ys = [2, 9, 16]
         return [(".", 59, ys[k], "#5bc8ff") for k in range(count)]
     if state == "attention":
