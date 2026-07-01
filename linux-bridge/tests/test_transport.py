@@ -1,5 +1,5 @@
 import asyncio
-from claude_buddy.transport import FakeTransport, StdoutTransport
+from familiar.transport import FakeTransport, StdoutTransport
 
 
 def test_fake_records():

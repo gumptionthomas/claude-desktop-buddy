@@ -364,7 +364,7 @@ def _make_tidbyt(cfg):
 
 def main(argv=None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
-    ap = argparse.ArgumentParser(prog="claude-buddy")
+    ap = argparse.ArgumentParser(prog="familiar run")
     ap.add_argument("--stdout", action="store_true",
                     help="print heartbeats instead of sending over BLE")
     args = ap.parse_args(argv)
@@ -373,15 +373,15 @@ def main(argv=None) -> int:
     tidbyt_cfg = _make_tidbyt(cfg)
     store = SessionStore(haiku_mode=compose is not None)
     if compose is not None:
-        print("[claude-buddy] haiku mode on", file=sys.stderr)
+        print("[familiar] haiku mode on", file=sys.stderr)
     if tidbyt_cfg is not None:
-        print("[claude-buddy] tidbyt mirror on", file=sys.stderr)
+        print("[familiar] tidbyt mirror on", file=sys.stderr)
 
     if args.stdout:
         transport = StdoutTransport()
         bridge = Bridge(store, transport, cfg.socket_path,
                         compose=compose, tidbyt=tidbyt_cfg)
-        print(f"[claude-buddy] dry-run; socket={cfg.socket_path}", file=sys.stderr)
+        print(f"[familiar] dry-run; socket={cfg.socket_path}", file=sys.stderr)
         try:
             asyncio.run(bridge.run())
         except KeyboardInterrupt:

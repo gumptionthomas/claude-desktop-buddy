@@ -1,7 +1,7 @@
 import json
 import socket
 import threading
-from claude_buddy import hook
+from familiar import hook
 
 
 def test_map_post_tool_carries_tool_and_no_command():
@@ -129,5 +129,5 @@ def test_send_swallows_errors_when_no_server(tmp_path):
 def test_main_always_returns_zero(tmp_path, monkeypatch):
     import io
     monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"session_id": "a"})))
-    monkeypatch.setenv("CLAUDE_BUDDY_SOCKET", str(tmp_path / "absent.sock"))
-    assert hook.main(["claude-buddy-hook", "stop"]) == 0
+    monkeypatch.setenv("FAMILIAR_SOCKET", str(tmp_path / "absent.sock"))
+    assert hook.main(["familiar-hook", "stop"]) == 0

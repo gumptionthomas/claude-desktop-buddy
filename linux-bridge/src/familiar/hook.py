@@ -82,7 +82,7 @@ def main(argv=None) -> int:
         data = json.loads(raw) if raw.strip() else {}
         payload = map_event(event, data)
         if payload is not None:
-            sock = os.environ.get("CLAUDE_BUDDY_SOCKET") or load().socket_path
+            sock = os.environ.get("FAMILIAR_SOCKET") or load().socket_path
             send(payload, sock)
     except Exception:
         pass

@@ -1,5 +1,5 @@
 import asyncio
-from claude_buddy import tidbyt
+from familiar import tidbyt
 
 
 def test_push_noop_without_config():

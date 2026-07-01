@@ -49,7 +49,7 @@ async def push(lines, *, device_id, api_token, app_path,
         return False
     run = runner or _run
     out = os.path.join(tempfile.gettempdir(),
-                       "claude-buddy-tidbyt-%d.webp" % os.getpid())
+                       "familiar-tidbyt-%d.webp" % os.getpid())
     try:
         if await run(render_args(app_path, lines, out, pixlet)) != 0:
             return False

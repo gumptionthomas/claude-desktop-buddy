@@ -1,8 +1,8 @@
 import asyncio
 import json
-from claude_buddy.state import SessionStore
-from claude_buddy.transport import FakeTransport
-from claude_buddy import daemon
+from familiar.state import SessionStore
+from familiar.transport import FakeTransport
+from familiar import daemon
 
 
 def test_apply_event_dispatches():

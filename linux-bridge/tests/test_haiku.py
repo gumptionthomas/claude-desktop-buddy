@@ -1,5 +1,5 @@
 import asyncio
-from claude_buddy import haiku
+from familiar import haiku
 
 
 def test_to_haiku_three_lines():

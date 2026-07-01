@@ -1,5 +1,5 @@
 import json
-from claude_buddy import heartbeat
+from familiar import heartbeat
 
 
 def test_encode_is_json_line():

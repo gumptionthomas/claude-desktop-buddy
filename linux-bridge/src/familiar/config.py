@@ -6,7 +6,7 @@ from pathlib import Path
 
 def _default_socket() -> str:
     base = os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
-    return str(Path(base) / "claude-buddy.sock")
+    return str(Path(base) / "familiar.sock")
 
 
 @dataclass
@@ -23,7 +23,7 @@ class Config:
 
 def _default_config_path() -> Path:
     base = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
-    return Path(base) / "claude-buddy" / "config.toml"
+    return Path(base) / "familiar" / "config.toml"
 
 
 def load(path: Path | None = None) -> Config:
