@@ -95,7 +95,7 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
 
     cfg_path = _default_config_path()
-    old_cfg = Path(str(cfg_path.parent).replace("familiar", "claude-buddy"))
+    old_cfg = cfg_path.parent.with_name("claude-buddy")
     if old_cfg.exists() and old_cfg != cfg_path.parent:
         print(f"Migrating existing claude-buddy setup from {old_cfg} ...")
         migrate(str(old_cfg), str(cfg_path.parent), str(_settings_path()))

@@ -36,6 +36,11 @@ def test_merge_hooks_rewrites_claude_buddy():
     assert "claude-buddy-hook stop" not in cmds
 
 
+def test_merge_hooks_sets_posttooluse_matcher():
+    out = init.merge_hooks({})
+    assert out["hooks"]["PostToolUse"][0].get("matcher") == "*"
+
+
 def test_migrate_copies_config(tmp_path):
     old = tmp_path / "claude-buddy"; old.mkdir()
     (old / "config.toml").write_text('owner = "x"\n')
