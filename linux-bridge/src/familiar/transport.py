@@ -18,3 +18,8 @@ class StdoutTransport:
     async def send(self, data: bytes) -> None:
         sys.stdout.write(data.decode("utf-8", "replace"))
         sys.stdout.flush()
+
+
+class NullTransport:
+    async def send(self, data: bytes) -> None:
+        return None

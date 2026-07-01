@@ -8,7 +8,7 @@ from datetime import date, datetime
 from . import haiku, heartbeat, tidbyt, transcript
 from .config import load
 from .state import SessionStore
-from .transport import StdoutTransport
+from .transport import NullTransport, StdoutTransport
 
 _DISPATCH = {
     "session_start": lambda s, p: s.session_start(p["session_id"]),
@@ -359,6 +359,14 @@ def _make_tidbyt(cfg):
             "asset_dir": asset_dir, "idle_assets": idle_assets}
 
 
+def _run_mode(cfg) -> str:
+    if cfg.address:
+        return "ble"
+    if cfg.tidbyt_device_id and cfg.tidbyt_api_key:
+        return "tidbyt"
+    return "none"
+
+
 def main(argv=None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
     ap = argparse.ArgumentParser(prog="familiar run")
@@ -369,16 +377,22 @@ def main(argv=None) -> int:
     compose = _make_compose(cfg)
     tidbyt_cfg = _make_tidbyt(cfg)
     store = SessionStore(haiku_mode=compose is not None)
+    mode = _run_mode(cfg)
+    if mode == "none":
+        print("[familiar] nothing configured — set an M5 `address` and/or "
+              "Tidbyt keys (try `familiar init`)", file=sys.stderr)
+        return 1
     if compose is not None:
         print("[familiar] haiku mode on", file=sys.stderr)
     if tidbyt_cfg is not None:
-        print("[familiar] tidbyt mirror on", file=sys.stderr)
+        print("[familiar] tidbyt on", file=sys.stderr)
 
-    if args.stdout:
-        transport = StdoutTransport()
+    if mode == "tidbyt" or args.stdout:
+        transport = StdoutTransport() if args.stdout else NullTransport()
         bridge = Bridge(store, transport, cfg.socket_path,
                         compose=compose, tidbyt=tidbyt_cfg)
-        print(f"[familiar] dry-run; socket={cfg.socket_path}", file=sys.stderr)
+        print(f"[familiar] {'dry-run' if args.stdout else 'tidbyt-only'}; "
+              f"socket={cfg.socket_path}", file=sys.stderr)
         try:
             asyncio.run(bridge.run())
         except KeyboardInterrupt:

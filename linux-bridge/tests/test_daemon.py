@@ -1,5 +1,6 @@
 import asyncio
 import json
+from familiar.config import Config
 from familiar.state import SessionStore
 from familiar.transport import FakeTransport
 from familiar import daemon
@@ -296,3 +297,17 @@ def test_tidbyt_sync_missing_asset_does_not_raise():
     snap = {"running": 0, "waiting": 0, "completed": False}
     # Should complete without raising even though the file cannot be opened.
     asyncio.run(b._tidbyt_sync(snap))
+
+
+def test_run_mode_selects_ble_when_address():
+    assert daemon._run_mode(Config(address="AA:BB", tidbyt_device_id="d",
+                                   tidbyt_api_key="k")) == "ble"
+
+
+def test_run_mode_tidbyt_only_without_address():
+    assert daemon._run_mode(Config(address=None, tidbyt_device_id="d",
+                                   tidbyt_api_key="k")) == "tidbyt"
+
+
+def test_run_mode_none_when_unconfigured():
+    assert daemon._run_mode(Config(address=None)) == "none"
