@@ -22,8 +22,10 @@ It adds three things, each optional and layered on the upstream firmware:
   distribution (see [Tidbyt companion](#tidbyt-companion)).
 
 Firmware changes stay isolated to `src/main.cpp`, the bridge lives in
-`linux-bridge/`, and upstream updates pull from the `upstream` remote. The
-upstream project's own description follows.
+`linux-bridge/`, and upstream updates pull from the `upstream` remote. The rest
+of this README is upstream's, edited where the fork diverges and with a couple
+of sections added — [Credits & license](#credits--license) spells out what's
+whose.
 
 ---
 
