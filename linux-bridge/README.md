@@ -1,7 +1,7 @@
-# claude-buddy — Linux BLE bridge for Claude Code
+# familiar — Linux bridge for Claude Code
 
-Feeds an M5StickC Plus running the buddy firmware with live Claude Code
-activity over BLE. Ambient display only (one-way).
+Feeds an M5StickC Plus running the buddy firmware and/or a Tidbyt display with
+live Claude Code activity. Ambient display only (one-way).
 
 ## Install
 
@@ -9,11 +9,28 @@ activity over BLE. Ambient display only (one-way).
 cd linux-bridge
 uv tool install .
 ```
-This puts `claude-buddy` and `claude-buddy-hook` on your PATH.
 
-## 1. Pair the stick (one-time)
+This puts `familiar` on your PATH.
 
-The firmware requires an encrypted, bonded link. Pair via bluetoothctl:
+## Setup
+
+```bash
+familiar init
+```
+
+`familiar init` walks you through everything interactively:
+
+- Prompts for your two Tidbyt keys (`tidbyt_device_id` and `tidbyt_api_key`) and
+  the optional extras: M5 device address, Anthropic API key, and owner name.
+- Writes `~/.config/familiar/config.toml`.
+- Merges the six hooks into `~/.claude/settings.json` (backs it up first;
+  idempotent — safe to re-run).
+- Optionally installs and enables the `familiar.service` systemd user unit.
+
+### 1. Pair the stick (M5 users only — one-time)
+
+The firmware requires an encrypted, bonded link. Pair via bluetoothctl before
+running `familiar init` so you have the MAC address ready:
 
 ```bash
 bluetoothctl
@@ -24,60 +41,32 @@ bluetoothctl
   exit
 ```
 
-## 2. Configure
+If you only have a Tidbyt (no M5 stick), leave the `address` field blank when
+`familiar init` asks — Tidbyt-only mode works with just the two Tidbyt keys.
 
-`~/.config/claude-buddy/config.toml`:
-```toml
-address = "AA:BB:CC:DD:EE:FF"
-owner   = "YourName"
+### 2. Run
 
-# Optional — haiku mode: the buddy narrates activity as a haiku written by
-# Claude Haiku (one aggregate haiku across active sessions, refreshed each
-# turn). Falls back to $ANTHROPIC_API_KEY if api_key is omitted. Without a key,
-# the buddy shows the plain reply snippet instead.
-# api_key = "sk-ant-..."
-# model   = "claude-haiku-4-5-20251001"
-
-# Optional — drive a Tidbyt 64x32 display: a state-reflective pet, plus the
-# haiku scrolling past when a turn ends. Needs `pixlet` on PATH
-# (https://github.com/tronbyt/pixlet). Get the device id + API key from the
-# Tidbyt app ("Get API key"). Both required; api key falls back to $TIDBYT_API_KEY.
-# tidbyt_device_id = "your-device-id"
-# tidbyt_api_key   = "your-api-key"
-# tidbyt_pet       = "capybara"   # any species in the list below, or "bufo"
-```
-
-See [Tidbyt companion](#tidbyt-companion) for what it shows and how to pick a
-species. It's best-effort — a missing `pixlet` or network blip never disturbs
-the M5 stick.
-
-## 3. Install the hooks
-
-Merge `hooks-settings.example.json` into `~/.claude/settings.json` (user
-scope, so all Claude Code sessions feed the buddy).
-
-## 4. Run
+After `familiar init`, start the daemon:
 
 ```bash
-claude-buddy            # connects over BLE
-claude-buddy --stdout   # dry run: prints heartbeats, no BLE
+familiar run             # connects over BLE / pushes to Tidbyt
+familiar run --stdout    # dry run: prints heartbeats, no BLE or Tidbyt
 ```
 
-## 5. Run as a service (recommended)
+### 3. Run as a service (recommended)
 
-Run the daemon as a systemd **user** service so it autostarts on login and
-reconnects automatically:
+`familiar init` can install the service for you. To install it manually:
 
 ```bash
 mkdir -p ~/.config/systemd/user
-cat > ~/.config/systemd/user/claude-buddy.service <<'EOF'
+cat > ~/.config/systemd/user/familiar.service <<'EOF'
 [Unit]
-Description=Claude Code -> M5StickC buddy BLE bridge
+Description=Claude Code -> M5StickC / Tidbyt familiar bridge
 After=bluetooth.target
 Wants=bluetooth.target
 
 [Service]
-ExecStart=%h/.local/bin/claude-buddy
+ExecStart=%h/.local/bin/familiar run
 Restart=on-failure
 RestartSec=3
 Environment=PYTHONUNBUFFERED=1
@@ -87,31 +76,51 @@ WantedBy=default.target
 EOF
 
 systemctl --user daemon-reload
-systemctl --user enable --now claude-buddy.service
+systemctl --user enable --now familiar.service
 ```
 
 Watch it / manage it:
 
 ```bash
-journalctl --user -u claude-buddy -f      # live logs (look for "connected <MAC>")
-systemctl --user restart claude-buddy     # after editing config
-systemctl --user status claude-buddy
+journalctl --user -u familiar -f      # live logs (look for "connected <MAC>")
+systemctl --user restart familiar     # after editing config
+systemctl --user status familiar
 ```
 
 (Optional: `loginctl enable-linger $USER` keeps the service running even when
 you're not logged in.)
 
-> **Don't run a manual `claude-buddy` and the service at the same time** — BLE
+> **Don't run a manual `familiar run` and the service at the same time** — BLE
 > allows only one connection to the stick.
+
+## Migrating from claude-buddy
+
+If you have an existing `claude-buddy` install, `familiar init` handles the
+migration automatically:
+
+- Copies `~/.config/claude-buddy/config.toml` → `~/.config/familiar/config.toml`
+  (non-destructive; won't overwrite if the familiar config already exists).
+- Rewrites the hook commands in `~/.claude/settings.json` from
+  `claude-buddy hook <event>` to `familiar hook <event>`.
+- Swaps the running service from `claude-buddy.service` to `familiar.service`.
+
+After `familiar init` completes and you've verified everything works:
+
+```bash
+uv tool uninstall claude-buddy
+```
 
 ## Tidbyt companion
 
-With `tidbyt_device_id`, `tidbyt_api_key`, and `pixlet` set, the daemon also
-drives a [Tidbyt](https://tidbyt.com) 64×32 display. It shows a state-reflective
-pet by default. If haiku mode is also on (an Anthropic `api_key` is set), each
-finished turn scrolls its haiku past for a couple of passes before returning to
-the pet — otherwise the Tidbyt just shows the pet (the two Tidbyt keys alone are
-enough; the haiku is the only part that needs the Anthropic key).
+With `tidbyt_device_id` and `tidbyt_api_key` set, the daemon also drives a
+[Tidbyt](https://tidbyt.com) 64×32 display. No extra software needed — Tidbyt
+pushes go directly over the Tidbyt cloud API (or a self-hosted
+[Tronbyt](https://github.com/tronbyt/tronbyt-server)). It shows a
+state-reflective pet by default. If haiku mode is also on (an Anthropic
+`api_key` is set), each finished turn scrolls its haiku past for a couple of
+passes before returning to the pet — otherwise the Tidbyt just shows the pet
+(the two Tidbyt keys alone are enough; the haiku is the only part that needs
+the Anthropic key).
 
 **Pick a species** with `tidbyt_pet` — one of eighteen ASCII pets, or `bufo`
 (the bundled GIF character):
@@ -135,9 +144,7 @@ Restart the service after changing it; an unknown name falls back to `bufo`.
 
 The pet WebPs are pre-rendered and bundled with the package —
 `tools/render_ascii_pet.py` builds the ASCII species from their firmware source,
-`tools/build_tidbyt_buddy.py` builds bufo from GIFs. Pushes go over the Tidbyt
-cloud API; if that ever sunsets, point `pixlet` at a self-hosted
-[Tronbyt](https://github.com/tronbyt/tronbyt-server) server instead.
+`tools/build_tidbyt_buddy.py` builds bufo from GIFs.
 
 This is the roughest part of the project to hand off: it renders and pushes from
 your own machine rather than being a one-click Tidbyt community app.
@@ -151,7 +158,7 @@ peripheral stops advertising, so the new daemon can't find it. Clear it:
 
 ```bash
 bluetoothctl disconnect AA:BB:CC:DD:EE:FF
-systemctl --user restart claude-buddy
+systemctl --user restart familiar
 ```
 
 **Pairing won't prompt for the passkey.** Set the agent capability before

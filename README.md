@@ -190,7 +190,7 @@ scrolls its haiku past before returning to the pet.
 
 Pick a species with `tidbyt_pet` in the bridge config; the states map the same
 way as the stick (busy / needs-you / celebrate / idle, plus a sleep doze and a
-heart for fast turns). Setup — device keys, `pixlet`, choosing a species — is in
+heart for fast turns). Setup — `familiar init`, device keys, choosing a species — is in
 [`linux-bridge/`](linux-bridge/#tidbyt-companion).
 
 This is the least-polished part of the fork: it renders locally and pushes over
@@ -227,7 +227,8 @@ tools/           — generators and converters
   extract_buddies.py   — parse a species' poses/timing/color from its .cpp
   render_ascii_pet.py  — render those to Tidbyt WebPs (this fork)
   build_tidbyt_buddy.py— convert bufo GIFs to Tidbyt WebPs (this fork)
-linux-bridge/    — Linux/Claude Code BLE daemon + Tidbyt companion (this fork)
+linux-bridge/    — `familiar` package: Linux/Claude Code BLE daemon + Tidbyt companion (this fork)
+                     run `familiar init` after `uv tool install .` to configure hooks + service
 ```
 
 ## Availability
