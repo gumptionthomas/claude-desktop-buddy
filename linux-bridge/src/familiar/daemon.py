@@ -244,9 +244,12 @@ class Bridge:
         self._tb_current = asset
         tb = self._tidbyt
         path = os.path.join(tb["asset_dir"], asset + ".webp")
-        with open(path, "rb") as f:
-            await tidbyt.push_image(f.read(), device_id=tb["device_id"],
-                                    api_token=tb["api_token"])
+        try:
+            with open(path, "rb") as f:
+                await tidbyt.push_image(f.read(), device_id=tb["device_id"],
+                                        api_token=tb["api_token"])
+        except Exception:
+            pass
 
     async def serve(self):
         if os.path.exists(self.socket_path):

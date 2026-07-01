@@ -284,3 +284,15 @@ def test_track_turn_slow_finish_sets_celebrate():
     b._track_turn({"event": "stop", "session_id": "s"})
     assert b._tb_celebrate_until > 120.0
     assert b._tb_heart_until < 0
+
+
+def test_tidbyt_sync_missing_asset_does_not_raise():
+    # _tidbyt_sync must be best-effort: a missing/unreadable asset file is
+    # silently swallowed so the daemon never crashes on a bad asset_dir.
+    b = _bridge_tb(idle_assets=["idle_0"])
+    b._tidbyt["asset_dir"] = "/nonexistent_dir_that_cannot_exist"
+    # Force _tidbyt_decide to return "idle_0" (differs from _tb_current=None)
+    # by having an idle snap with no active windows.
+    snap = {"running": 0, "waiting": 0, "completed": False}
+    # Should complete without raising even though the file cannot be opened.
+    asyncio.run(b._tidbyt_sync(snap))
