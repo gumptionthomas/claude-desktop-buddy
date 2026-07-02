@@ -1,4 +1,4 @@
-from claude_buddy import transcript
+from familiar import transcript
 
 
 def _w(tmp_path, *lines):

@@ -1,22 +1,22 @@
 {
   "hooks": {
     "SessionStart": [
-      { "hooks": [ { "type": "command", "command": "claude-buddy-hook session-start" } ] }
+      { "hooks": [ { "type": "command", "command": "familiar hook session-start" } ] }
     ],
     "UserPromptSubmit": [
-      { "hooks": [ { "type": "command", "command": "claude-buddy-hook prompt-submit" } ] }
+      { "hooks": [ { "type": "command", "command": "familiar hook prompt-submit" } ] }
     ],
     "PostToolUse": [
-      { "matcher": "*", "hooks": [ { "type": "command", "command": "claude-buddy-hook post-tool" } ] }
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "familiar hook post-tool" } ] }
     ],
     "Notification": [
-      { "hooks": [ { "type": "command", "command": "claude-buddy-hook notification" } ] }
+      { "hooks": [ { "type": "command", "command": "familiar hook notification" } ] }
     ],
     "Stop": [
-      { "hooks": [ { "type": "command", "command": "claude-buddy-hook stop" } ] }
+      { "hooks": [ { "type": "command", "command": "familiar hook stop" } ] }
     ],
     "SessionEnd": [
-      { "hooks": [ { "type": "command", "command": "claude-buddy-hook session-end" } ] }
+      { "hooks": [ { "type": "command", "command": "familiar hook session-end" } ] }
     ]
   }
 }

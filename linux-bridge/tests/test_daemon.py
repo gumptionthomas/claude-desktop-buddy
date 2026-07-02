@@ -1,8 +1,9 @@
 import asyncio
 import json
-from claude_buddy.state import SessionStore
-from claude_buddy.transport import FakeTransport
-from claude_buddy import daemon
+from familiar.config import Config
+from familiar.state import SessionStore
+from familiar.transport import FakeTransport
+from familiar import daemon
 
 
 def test_apply_event_dispatches():
@@ -141,8 +142,8 @@ def test_maybe_roll_today_resets_on_date_change():
 def _bridge_tb(idle_assets=None):
     if idle_assets is None:
         idle_assets = ["idle_%d" % i for i in range(9)]   # bufo default
-    tb = {"device_id": "d", "api_token": "t", "pixlet": "pixlet",
-          "app_path": "/a.star", "asset_dir": "/assets", "idle_assets": idle_assets}
+    tb = {"device_id": "d", "api_token": "t",
+          "asset_dir": "/assets", "idle_assets": idle_assets}
     return daemon.Bridge(SessionStore(), FakeTransport(), "/tmp/x.sock", tidbyt=tb)
 
 
@@ -284,3 +285,29 @@ def test_track_turn_slow_finish_sets_celebrate():
     b._track_turn({"event": "stop", "session_id": "s"})
     assert b._tb_celebrate_until > 120.0
     assert b._tb_heart_until < 0
+
+
+def test_tidbyt_sync_missing_asset_does_not_raise():
+    # _tidbyt_sync must be best-effort: a missing/unreadable asset file is
+    # silently swallowed so the daemon never crashes on a bad asset_dir.
+    b = _bridge_tb(idle_assets=["idle_0"])
+    b._tidbyt["asset_dir"] = "/nonexistent_dir_that_cannot_exist"
+    # Force _tidbyt_decide to return "idle_0" (differs from _tb_current=None)
+    # by having an idle snap with no active windows.
+    snap = {"running": 0, "waiting": 0, "completed": False}
+    # Should complete without raising even though the file cannot be opened.
+    asyncio.run(b._tidbyt_sync(snap))
+
+
+def test_run_mode_selects_ble_when_address():
+    assert daemon._run_mode(Config(address="AA:BB", tidbyt_device_id="d",
+                                   tidbyt_api_key="k")) == "ble"
+
+
+def test_run_mode_tidbyt_only_without_address():
+    assert daemon._run_mode(Config(address=None, tidbyt_device_id="d",
+                                   tidbyt_api_key="k")) == "tidbyt"
+
+
+def test_run_mode_none_when_unconfigured():
+    assert daemon._run_mode(Config(address=None)) == "none"

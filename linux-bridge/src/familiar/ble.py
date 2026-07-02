@@ -35,7 +35,7 @@ async def run_with_ble(cfg, store, on_connect, compose=None, tidbyt=None) -> Non
     while True:
         address = await _resolve_address(cfg)
         if not address:
-            print("[claude-buddy] no Claude- device found; is it awake? "
+            print("[familiar] no Claude- device found; is it awake? "
                   "have you paired with bluetoothctl?")
             await asyncio.sleep(min(backoff, 30))
             backoff = min(backoff * 2, 30)
@@ -46,7 +46,7 @@ async def run_with_ble(cfg, store, on_connect, compose=None, tidbyt=None) -> Non
                 address,
                 disconnected_callback=lambda _c: disconnected.set(),
             ) as client:
-                print(f"[claude-buddy] connected {address}")
+                print(f"[familiar] connected {address}")
                 backoff = 1.0
                 transport = BleTransport(client)
                 # TX notify is encrypted-only; subscribing forces the
@@ -73,8 +73,8 @@ async def run_with_ble(cfg, store, on_connect, compose=None, tidbyt=None) -> Non
                 if run_task in done:
                     run_task.result()   # re-raise a real failure to the retry loop
                 else:
-                    print(f"[claude-buddy] link dropped; reconnecting {address}")
+                    print(f"[familiar] link dropped; reconnecting {address}")
         except Exception as e:
-            print(f"[claude-buddy] disconnected: {e}")
+            print(f"[familiar] disconnected: {e}")
             await asyncio.sleep(min(backoff, 30))
             backoff = min(backoff * 2, 30)

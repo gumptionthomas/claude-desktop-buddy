@@ -1,12 +1,12 @@
 from pathlib import Path
-from claude_buddy.config import load
+from familiar.config import load
 
 
 def test_load_defaults_when_missing(tmp_path):
     cfg = load(tmp_path / "nope.toml")
     assert cfg.address is None
     assert cfg.owner == ""
-    assert cfg.socket_path.endswith("claude-buddy.sock")
+    assert cfg.socket_path.endswith("familiar.sock")
 
 
 def test_load_reads_values(tmp_path):

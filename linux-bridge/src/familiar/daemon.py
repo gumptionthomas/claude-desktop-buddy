@@ -2,14 +2,13 @@ import argparse
 import asyncio
 import json
 import os
-import shutil
 import sys
 from datetime import date, datetime
 
 from . import haiku, heartbeat, tidbyt, transcript
 from .config import load
 from .state import SessionStore
-from .transport import StdoutTransport
+from .transport import NullTransport, StdoutTransport
 
 _DISPATCH = {
     "session_start": lambda s, p: s.session_start(p["session_id"]),
@@ -188,8 +187,7 @@ class Bridge:
             await asyncio.sleep(wait)
         tb = self._tidbyt
         ok = await tidbyt.push(lines, device_id=tb["device_id"],
-                               api_token=tb["api_token"], app_path=tb["app_path"],
-                               pixlet=tb["pixlet"])
+                               api_token=tb["api_token"])
         if ok:
             self._tb_haiku_until = self._loop_time() + self.tb_haiku_secs
             self._tb_current = "haiku"
@@ -246,8 +244,12 @@ class Bridge:
         self._tb_current = asset
         tb = self._tidbyt
         path = os.path.join(tb["asset_dir"], asset + ".webp")
-        await tidbyt.push_image(path, device_id=tb["device_id"],
-                                api_token=tb["api_token"], pixlet=tb["pixlet"])
+        try:
+            with open(path, "rb") as f:
+                await tidbyt.push_image(f.read(), device_id=tb["device_id"],
+                                        api_token=tb["api_token"])
+        except Exception:
+            pass
 
     async def serve(self):
         if os.path.exists(self.socket_path):
@@ -351,20 +353,23 @@ def _tidbyt_assets(here, pet):
 def _make_tidbyt(cfg):
     if not (cfg.tidbyt_device_id and cfg.tidbyt_api_key):
         return None
-    # The systemd user service runs with a minimal PATH that lacks ~/.local/bin,
-    # so resolve pixlet to an absolute path the subprocess can actually find.
-    pixlet = shutil.which("pixlet") or os.path.expanduser("~/.local/bin/pixlet")
     here = os.path.dirname(__file__)
     asset_dir, idle_assets = _tidbyt_assets(here, cfg.tidbyt_pet)
     return {"device_id": cfg.tidbyt_device_id, "api_token": cfg.tidbyt_api_key,
-            "pixlet": pixlet,
-            "app_path": os.path.join(here, "tidbyt_app.star"),
             "asset_dir": asset_dir, "idle_assets": idle_assets}
+
+
+def _run_mode(cfg) -> str:
+    if cfg.address:
+        return "ble"
+    if cfg.tidbyt_device_id and cfg.tidbyt_api_key:
+        return "tidbyt"
+    return "none"
 
 
 def main(argv=None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
-    ap = argparse.ArgumentParser(prog="claude-buddy")
+    ap = argparse.ArgumentParser(prog="familiar run")
     ap.add_argument("--stdout", action="store_true",
                     help="print heartbeats instead of sending over BLE")
     args = ap.parse_args(argv)
@@ -372,16 +377,22 @@ def main(argv=None) -> int:
     compose = _make_compose(cfg)
     tidbyt_cfg = _make_tidbyt(cfg)
     store = SessionStore(haiku_mode=compose is not None)
+    mode = _run_mode(cfg)
+    if mode == "none":
+        print("[familiar] nothing configured — set an M5 `address` and/or "
+              "Tidbyt keys (try `familiar init`)", file=sys.stderr)
+        return 1
     if compose is not None:
-        print("[claude-buddy] haiku mode on", file=sys.stderr)
+        print("[familiar] haiku mode on", file=sys.stderr)
     if tidbyt_cfg is not None:
-        print("[claude-buddy] tidbyt mirror on", file=sys.stderr)
+        print("[familiar] tidbyt on", file=sys.stderr)
 
-    if args.stdout:
-        transport = StdoutTransport()
+    if mode == "tidbyt" or args.stdout:
+        transport = StdoutTransport() if args.stdout else NullTransport()
         bridge = Bridge(store, transport, cfg.socket_path,
                         compose=compose, tidbyt=tidbyt_cfg)
-        print(f"[claude-buddy] dry-run; socket={cfg.socket_path}", file=sys.stderr)
+        print(f"[familiar] {'dry-run' if args.stdout else 'tidbyt-only'}; "
+              f"socket={cfg.socket_path}", file=sys.stderr)
         try:
             asyncio.run(bridge.run())
         except KeyboardInterrupt:

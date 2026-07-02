@@ -1,4 +1,4 @@
-from claude_buddy.state import SessionStore
+from familiar.state import SessionStore
 
 
 class FakeClock:
