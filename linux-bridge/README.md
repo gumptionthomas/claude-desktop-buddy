@@ -93,23 +93,6 @@ you're not logged in.)
 > **Don't run a manual `familiar run` and the service at the same time** — BLE
 > allows only one connection to the stick.
 
-## Migrating from claude-buddy
-
-If you have an existing `claude-buddy` install, `familiar init` handles the
-migration automatically:
-
-- Copies `~/.config/claude-buddy/config.toml` → `~/.config/familiar/config.toml`
-  (non-destructive; won't overwrite if the familiar config already exists).
-- Rewrites the hook commands in `~/.claude/settings.json` from
-  `claude-buddy-hook <event>` to `familiar hook <event>`.
-- Swaps the running service from `claude-buddy.service` to `familiar.service`.
-
-After `familiar init` completes and you've verified everything works:
-
-```bash
-uv tool uninstall claude-buddy
-```
-
 ## Tidbyt companion
 
 With `tidbyt_device_id` and `tidbyt_api_key` set, the daemon also drives a
